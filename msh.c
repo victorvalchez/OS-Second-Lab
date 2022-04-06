@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
 
 
 		/************************ STUDENTS CODE ********************************/
-	   if (command_counter > 0) {
+	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
 			}
@@ -116,25 +116,27 @@ int main(int argc, char* argv[])
 		// PART 1,2 EXECUTION OF SIMPLE COMMANDS, AND EXECUTION IN BACKGROUND
 		//To excute a single command through the child, not necessary to create pipes
 		if (command_counter == 1) {
+			int filehandle=0;
+        	int stat;  //CAMBIAR NOMBRE DE ESTO; CUANDO SEPA QUE SIGNIFICA
             int pid = fork();
-			switch(pid){
+			switch(pid) {
 				case -1:
                 	perror("Process creation error");
                 	return (-1);
 				
+
 				//In case the fork was ok, we receive 0 from the child's process
 				case 0:
-					int check_file=0;
-        			int stat;  //CAMBIAR NOMBRE DE ESTO; CUANDO SEPA QUE SIGNIFICA
-			
 					//To redirect the standard input
 					if (strcmp(filev[0], "0") != 0) {
 						if((close(0)) <0){
 							perror("Closing STD_IN error");
+							return (-1);
 						}
 
-						if ((check_file = open(filev[0], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+						if ((filehandle = open(filev[0], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
 							perror("Error while opening new input file\n");
+							return (-1);
 						}
 					}
 
@@ -142,10 +144,12 @@ int main(int argc, char* argv[])
 					if (strcmp(filev[1], "0") != 0) {
 						if((close(1)) <0){
 							perror("Closing STD_OUT error");
+							return (-1);
 						}
 
-						if ((check_file = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+						if ((filehandle = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
 							perror("Error while opening new ouput file\n");
+							return (-1);
 						}
 					}
 
@@ -153,28 +157,33 @@ int main(int argc, char* argv[])
 					if (strcmp(filev[2], "0") != 0) {
 						if((close(2)) <0){
 							perror("Closing STD_ERR error");
+							return (-1);
 						}
 
-						if ((check_file = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+						if ((filehandle = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
 							perror("Error while opening new error file\n");
+							return (-1);
 						}
 					}
 					break;	// As it is not returning anything we have to put break;
 					//Make the child process exceute the command
 					if (execvp(argv_execvp[0], argv_execvp) < 0) {
 						perror("Error al ejecutar\n");
+						return (-1);
 					}
              
 				default: //Parent process
-					if(check_file!=0){
-						if((close(check_file)) <0){
+					if(filehandle!=0){
+						if((close(filehandle)) <0){
 							perror("Error al cerrar descriptor");
+							return (-1);
 						}
 					}
                     if (!in_background) {
-                      	while (wait(&stat) > 0){
+                      	while (wait(&stat) > 0) {
                       		if (stat < 0) {
                         		perror("Error ejecucion hijo\n");
+								return (-1);
                       		}
 						}
                    	}	
@@ -183,10 +192,11 @@ int main(int argc, char* argv[])
 		// PART 3, EXECUTION OF MORE THAN 1 COMMAND
 		//If we receive more than 1 parameter we need to create pipes
 		else {
-			int n_commands= command_counter;
+			int n_commands = command_counter;
             int fd[2];		//
             int pid, status2;
-            int check_file=0;
+            int filehandle = 0;
+			
 			int desc_dup;
 
 			// To make the standard input be desc_dup
@@ -219,13 +229,14 @@ int main(int argc, char* argv[])
                       	return (-1);
 					// Child process
 					case 0:
+						// Cambiar orden de abrir los archivos empezar por 0
                       	if (strcmp(filev[2], "0") != 0) {
 							if((close(2)) <0) {
 								perror("Error al cerrar descriptor");
 								return (-1);
 							}
 
-							if ((check_file = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+							if ((filehandle = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
 								perror("Error al abrir fichero\n");
 								return (-1);
 							}
@@ -237,7 +248,7 @@ int main(int argc, char* argv[])
 								perror("Error al cerrar descriptor");
 								return (-1);
 							}
-							if ((check_file = open(filev[0], O_RDWR, 0644)) < 0) {
+							if ((filehandle = open(filev[0], O_RDWR, 0644)) < 0) {
 								perror("Error al abrir fichero\n");
 								return (-1);
 							}
@@ -285,7 +296,7 @@ int main(int argc, char* argv[])
 									return (-1);
 								}
 
-								if ((check_file = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+								if ((filehandle = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
 									perror("Error al abrir fichero\n");
 									return (-1);
 								}
@@ -299,6 +310,7 @@ int main(int argc, char* argv[])
 
 							if (execvp(argv_execvp[0], argv_execvp) < 0) {
 								perror("Error al ejecutar\n");
+								return (-1);
 							}
                      	
 						break;
@@ -325,8 +337,8 @@ int main(int argc, char* argv[])
                       	}
 				}			
 			}
-			if(check_file!=0){
-				if((close(check_file)) <0) {
+			if(filehandle!=0){
+				if((close(filehandle)) <0) {
 					perror("Error al cerrar descriptor");
 					return (-1);
 				}
