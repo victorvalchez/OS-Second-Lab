@@ -127,19 +127,6 @@ int main(int argc, char* argv[])
 
 				//In case the fork was ok, we receive 0 from the child's process
 				case 0:
-					//To redirect the standard input
-					if (strcmp(filev[0], "0") != 0) {
-						if((close(0)) <0){
-							perror("Closing STD_IN error");
-							return (-1);
-						}
-
-						if ((filehandle = open(filev[0], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
-							perror("Error while opening new input file\n");
-							return (-1);
-						}
-					}
-
 					//To redirect the standard ouput
 					if (strcmp(filev[1], "0") != 0) {
 						if((close(1)) <0){
@@ -149,6 +136,19 @@ int main(int argc, char* argv[])
 
 						if ((filehandle = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
 							perror("Error while opening new ouput file\n");
+							return (-1);
+						}
+					}
+
+					//To redirect the standard input
+					if (strcmp(filev[0], "0") != 0) {
+						if((close(0)) <0){
+							perror("Closing STD_IN error");
+							return (-1);
+						}
+
+						if ((filehandle = open(filev[0], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+							perror("Error while opening new input file\n");
 							return (-1);
 						}
 					}
@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
 							return (-1);
 						}
 					}
-					break;	// As it is not returning anything we have to put break;
+					// As it is not returning anything we have to put break;
 					//Make the child process exceute the command
 					if (execvp(argv_execvp[0], argv_execvp) < 0) {
 						perror("Error al ejecutar\n");
@@ -180,12 +180,11 @@ int main(int argc, char* argv[])
 						}
 					}
                     if (!in_background) {
-                      	while (wait(&stat) > 0) {
+                      	while (wait(&stat) > 0);
                       		if (stat < 0) {
                         		perror("Error ejecucion hijo\n");
 								return (-1);
                       		}
-						}
                    	}	
             }
 		}
@@ -346,12 +345,11 @@ int main(int argc, char* argv[])
             
 			// Al terminar el bucle, el primer proceso espera al último, que irá despertando a todos
             if (!in_background) {
-                while (wait(&status2) > 0) {
+                while (wait(&status2) > 0);
                     if (stat < 0) {
                       	perror("Error ejecucion hijo\n");
 						return (-1);
                     }
-				}
             }
 		}
     }
