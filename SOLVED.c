@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
                   getCompleteCommand(argvv, i);
                 }
 
-            		//Codigo mycalc
+            	//Codigo mycalc
                 if (strcmp(argv_execvp[0], "mycalc") == 0) {
                   if (argv_execvp[1]!=NULL && argv_execvp[2]!=NULL && argv_execvp[3]!=NULL) {
 										//Operacion add

@@ -1,5 +1,5 @@
-//  MSH main file
-// Write your msh source code here
+// MSH main file.
+// Write your msh source code here.
 
 //#include "parser.h"
 #include <stddef.h>			/* NULL */
@@ -17,10 +17,10 @@
 #define MAX_COMMANDS 8
 
 
-// files in case of redirection
+// files in case of redirection.
 char filev[3][64];
 
-//to store the execvp second parameter
+//to store the execvp second parameter.
 char *argv_execvp[8];
 
 void siginthandler(int param)
@@ -37,8 +37,9 @@ void siginthandler(int param)
  * @param num_command
  * @return
  */
+
 void getCompleteCommand(char*** argvv, int num_command) {
-	//reset first
+	// Reset first.
 	for(int j = 0; j < 8; j++)
 		argv_execvp[j] = NULL;
 
@@ -77,8 +78,7 @@ int main(int argc, char* argv[])
 	int num_commands;
 
 
-	while (1) 
-	{
+	while (1) {
 		int status = 0;
 		int command_counter = 0;
 		int in_background = 0;
@@ -108,11 +108,89 @@ int main(int argc, char* argv[])
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
 			}
 			else {
-				// Print command
-				print_command(argvv, filev, in_background);
+				for (int i = 0; i < command_counter; i++) {
+                  getCompleteCommand(argvv, i);
+                }
 			}
 		}
-	}
+
+		//To excute a single command through the child, not necessary to create pipes
+		if (command_counter == 1) {
+            int pid = fork();
+			switch(pid){
+				case -1:
+                	perror("Process creation error");
+                	return (-1);
+				
+				//In case the fork was ok, we receive 0 from the child's process
+				case 0:
+					int check_file=0;
+        			int stat;  //CAMBIAR NOMBRE DE ESTO; CUANDO SEPA QUE SIGNIFICA
+			
+					//To redirect the standard input
+					if (strcmp(filev[0], "0") != 0) {
+						if((close(0)) <0){
+							perror("Closing STD_IN error");
+						}
+
+						if ((check_file = open(filev[0], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+							perror("Error while opening new input file\n");
+						}
+					}
+
+					//To redirect the standard ouput
+					if (strcmp(filev[1], "0") != 0) {
+						if((close(1)) <0){
+							perror("Closing STD_OUT error");
+						}
+
+						if ((check_file = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+							perror("Error while opening new ouput file\n");
+						}
+					}
+
+					//To redirect the standard error
+					if (strcmp(filev[2], "0") != 0) {
+						if((close(2)) <0){
+							perror("Closing STD_ERR error");
+						}
+
+						if ((check_file = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+							perror("Error while opening new error file\n");
+						}
+					}
+                
+					//Make the child process exceute the command
+					if (execvp(argv_execvp[0], argv_execvp) < 0) {
+						perror("Error al ejecutar\n");
+					}
+             
+					default: //Parent process
+						if(check_file!=0){
+							if((close(check_file)) <0){
+								perror("Error al cerrar descriptor");
+							}
+						}
+                    	if (!in_background) {
+                      		while (wait(&stat) > 0);
+                      		if (stat < 0) {
+                        		perror("Error ejecucion hijo\n");
+                      		}
+                   		 }	
+            }
+		}
+
+		//If we receive more than 1 parameter we need to create pipes
+		else {
+			int n_commands= command_counter;
+            int fd[2];
+            int pid, status2;
+            int check_file=0;
+			int in;
+
+
+		}
+    }
 	
 	return 0;
 }
