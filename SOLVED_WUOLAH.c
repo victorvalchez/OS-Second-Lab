@@ -78,13 +78,13 @@ int main(int argc, char* argv[])
     char ***argvv = NULL;
     int num_commands;
 
-		int Acu=0;
+		int Acc=0;
 
 	while (1)
 	{
 		error: ;
 		int status = 0;
-	  int command_counter = 0;
+	    int command_counter = 0;
 		int in_background = 0;
 		signal(SIGINT, siginthandler);
 
@@ -121,9 +121,9 @@ int main(int argc, char* argv[])
                     if (strcmp(argv_execvp[2], "add") == 0) {
                       int x = atoi(argv_execvp[1]);
                       int y = atoi(argv_execvp[3]);
-                      Acu = Acu + x + y;
+                      Acc = Acc + x + y;
                       char buf[20];
-                      sprintf(buf, "%d", Acu);
+                      sprintf(buf, "%d", Acc);
                       const char *p = buf;
 											//variable de entorno Acc
 

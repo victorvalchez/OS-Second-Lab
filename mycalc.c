@@ -1,58 +1,72 @@
 // Internal command: mycalc.
 if (strcmp(argv_execvp[0], "mycalc") == 0) {
-    if (argv_execvp[1]!=NULL && argv_execvp[2]!=NULL && argv_execvp[3]!=NULL) {
+    // We ensure that we receive three arguments (<operand_1>, <add/mod>, <operand_2>) to perform the operation.
+    if ((argv_execvp[1] != NULL) && (argv_execvp[2] != NULL) && (argv_execvp[3] != NULL)) {
         
-        // Addition operation.
+        // ADD --> Addition operation.
         if (strcmp(argv_execvp[2], "add") == 0) {
-            int x = atoi(argv_execvp[1]);
-            int y = atoi(argv_execvp[3]);
-            Acu = Acu + x + y;
-            char buf[20];
-            sprintf(buf, "%d", Acu);
-            const char *p = buf;
-        
+            
+            // We separate the two operands into 2 variables by taking them from positions 1 and 3 from argv_execvp.
+            int operand1 = atoi(argv_execvp[1]);
+            int operand2 = atoi(argv_execvp[3]);
+
+            // Environment variable Acc which stores the addition of the results of the sums.
+            Acc = operand1 + operand2 + Acc;
+
+            // We define a buffer to keep track of the accumulated sums.
+            char buffer[20];
+            sprintf(buffer, "%d", Acc);
+            const char *p = buffer;
+            
             // Environment variable Add which stores the addition of the sums done.
             if (setenv("Acc", p, 1) < 0) {
-                perror("Error giving enviroment variable\n");
-                goto error;
+                perror("[ERROR] Error in enviroment variable\n");
+                return(-1);
             }
     
             char str[100];
-            snprintf(str, 100, "[OK] %d + %d = %d; Acc %s\n", x, y, x + y, getenv("Acc"));
-      
-            if((write(2, str, strlen(str)))<0){
-                perror ("Error writing");
-                goto error;
+            snprintf(str, 100, "[OK] %d + %d = %d; Acc %s\n", operand1, operand2, operand1 + operand2, getenv("Acc"));
+
+            // We check if there is any error while writing.
+            if((write(2, str, strlen(str))) < 0){
+                perror("[ERROR] Error while writing\n");
+                return(-1);
             }
                          
-        } 
+        }
 
-        //Operacion mod, en esta, no se cambia el modulo
+        // MOD --> Modulus operation.
         else if (strcmp(argv_execvp[2], "mod") == 0) {
-            int x = atoi(argv_execvp[1]);
-            int y = atoi(argv_execvp[3]);
+            int operand1 = atoi(argv_execvp[1]);
+            int operand2 = atoi(argv_execvp[3]);
             char str[100];
         
-            snprintf(str, 100, "[OK] %d %% %d = %d * %d + %d\n", x, y, y, abs(floor(x / y)), x % y);
+            snprintf(str, 100, "[OK] %d %% %d = %d; Quotient %d\n", operand1, operand2, operand1 % operand2, abs(floor(operand1 / operand2)));
+
+            // We check if there is any error while writing the message on screen.
             if((write(2, str, strlen(str)))<0){
-                perror ("Error writing");
-                goto error;
+                perror("[ERROR] Error while writing\n");
+                return(-1);
             }
     
         } 
-        
+
+        // If add nor mod are selected as operations, the format of the call is not correct and an error is shown.
         else {
-            if((write(1, "[ERROR] The structure of the command is <operand_1> <add/mod> <operand_2>", strlen("[ERROR] The structure of the command is <operand_1> <add/mod> <operando_2>"))) <0) {
-                perror ("Error writing");
-                goto error;
+            // We check if there is any error while writing the ERROR message on screen.
+            if((write(1, "[ERROR] The structure of the command is mycalc <operand_1> <add/mod> <operand_2>\n", strlen("[ERROR] The structure of the command is mycalc <operand_1> <add/mod> <operand_2>\n"))) < 0) {
+                perror("Error while writing.");
+                return(-1);
             }    
         }
     }
-        
+    
+    // If some of the arguments is null, the format of the call is not correct and an error is shown.
     else {
-        if((write(1, "[ERROR] The structure of the command is <operand_1> <add/mod> <operand_2>", strlen("[ERROR] The structure of the command is <operand_1> <add/mod> <operando_2>"))) <0) {
-            perror ("Error writing");
-            goto error;
+        // We check if there is any error while writing the ERROR message on screen.
+        if((write(1, "[ERROR] The structure of the command is mycalc <operand_1> <add/mod> <operand_2>\n", strlen("[ERROR] The structure of the command is mycalc <operand_1> <add/mod> <operand_2>\n"))) < 0) {
+            perror("Error while writing.");
+            return(-1);
         }
     }
 }
