@@ -124,7 +124,6 @@ int main(int argc, char* argv[])
                 	perror("Process creation error");
                 	return (-1);
 				
-
 				//In case the fork was ok, we receive 0 from the child's process
 				case 0:
 					//To redirect the standard ouput
@@ -147,7 +146,7 @@ int main(int argc, char* argv[])
 							return (-1);
 						}
 
-						if ((filehandle = open(filev[0], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+						if ((filehandle = open(filev[0], O_RDWR, 0644)) < 0) {
 							perror("Error while opening new input file\n");
 							return (-1);
 						}
@@ -220,12 +219,14 @@ int main(int argc, char* argv[])
 						// Close both read and write descriptors created by the pipe
 						if((close(fd[0])) < 0) {
 							perror("Error al cerrar descriptor");
+							return (-1);
 							
 						}
 						if((close(fd[1])) < 0) {
 							perror("Error al cerrar descriptor");
+							return (-1);
 						}
-                      	return (-1);
+                    
 					// Child process
 					case 0:
 						// Cambiar orden de abrir los archivos empezar por 0
@@ -254,18 +255,18 @@ int main(int argc, char* argv[])
                       	}
 						// Otherwise ... 
 						else {
-							if((close(0)) <0){
+							if((close(0)) <0) {
 								perror("Error al cerrar descriptor");
 								return (-1);
-								}
-								if (dup(desc_dup) < 0) {
-									perror("Error al duplicar descriptor\n");
-									return (-1);
-								}
-								if((close(desc_dup)) <0){
-									perror("Error al cerrar descriptor");
-									return (-1);
-								}
+							}
+							if (dup(desc_dup) < 0) {
+								perror("Error al duplicar descriptor\n");
+								return (-1);
+							}
+							if((close(desc_dup)) <0){
+								perror("Error al cerrar descriptor");
+								return (-1);
+							}
                       	}
 
 						// Check if it is the last process and close the default output
@@ -336,7 +337,7 @@ int main(int argc, char* argv[])
                       	}
 				}			
 			}
-			if(filehandle!=0){
+			if (filehandle!=0) {
 				if((close(filehandle)) <0) {
 					perror("Error al cerrar descriptor");
 					return (-1);
