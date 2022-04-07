@@ -116,71 +116,81 @@ int main(int argc, char* argv[])
 		// PART 1,2 EXECUTION OF SIMPLE COMMANDS, AND EXECUTION IN BACKGROUND
 		//To excute a single command through the child, not necessary to create pipes
 		if (command_counter == 1) {
-			int filehandle=0;
-        	int stat;  //CAMBIAR NOMBRE DE ESTO; CUANDO SEPA QUE SIGNIFICA
+			int descfile = 0;	// New file descriptor for when opening the respective files
             int pid = fork();
+			// Create the child process and check the different creation cases
 			switch(pid) {
+				// In case the creation was a failure
 				case -1:
                 	perror("Process creation error");
                 	return (-1);
 				
 				//In case the fork was ok, we receive 0 from the child's process
 				case 0:
-					//To redirect the standard ouput
-					if (strcmp(filev[1], "0") != 0) {
-						if((close(1)) <0){
-							perror("Closing STD_OUT error");
-							return (-1);
-						}
-
-						if ((filehandle = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
-							perror("Error while opening new ouput file\n");
-							return (-1);
-						}
-					}
-
-					//To redirect the standard input
+					// To redirect the standard input
+					// We check that the redirected input file exists, so it does not contain a zero
 					if (strcmp(filev[0], "0") != 0) {
+						// Close it
 						if((close(0)) <0){
 							perror("Closing STD_IN error");
 							return (-1);
 						}
-
-						if ((filehandle = open(filev[0], O_RDWR, 0644)) < 0) {
-							perror("Error while opening new input file\n");
+						// And open the new one
+						if ((descfile = open(filev[0], O_RDWR, 0644)) < 0) {
+							perror("Error while opening new input file");
+							return (-1);
+						}
+					}
+					
+					// To redirect the standard ouput
+					// Same as before, to check if it exists
+					if (strcmp(filev[1], "0") != 0) {
+						// Close it
+						if((close(1)) <0){
+							perror("Closing STD_OUT error");
+							return (-1);
+						}
+						// And open the new one
+						if ((descfile = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+							perror("Error while opening new ouput file");
 							return (-1);
 						}
 					}
 
-					//To redirect the standard error
+					// To redirect the standard error
+					// Same as before, to check if it exists
 					if (strcmp(filev[2], "0") != 0) {
+						// Close it
 						if((close(2)) <0){
 							perror("Closing STD_ERR error");
 							return (-1);
 						}
-
-						if ((filehandle = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
-							perror("Error while opening new error file\n");
+						// And open the new one
+						if ((descfile = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+							perror("Error while opening new error file");
 							return (-1);
 						}
 					}
-					// As it is not returning anything we have to put break;
-					//Make the child process exceute the command
+					
+					/* Now, make the child process exceute the command. argv_execvp contains the command and was obtained by means of getCompleteCommand, no need to put '&' before the second one as it is a character vector. It only takes [0] as this part is only for when we have 1 command. */
 					if (execvp(argv_execvp[0], argv_execvp) < 0) {
-						perror("Error al ejecutar\n");
+						perror("There was an error executing command in the child");
 						return (-1);
 					}
-             
-				default: //Parent process
-					if(filehandle!=0){
-						if((close(filehandle)) <0){
-							perror("Error al cerrar descriptor");
+					break;
+				
+				/* As fork() returns the child's PID for the parent and we do not now it, this is the default case, the parent process */
+				default:
+					// If the descriptor obtained is not equal to 0
+					if (descfile) { // descfile != 0
+						if ((close(descfile)) < 0){
+							perror("Error while closing new file descriptor");
 							return (-1);
 						}
 					}
-                    if (!in_background) {
-                      	while (wait(&stat) > 0);
-                      		if (stat < 0) {
+                    if (in_background == 0) {
+                      	while (wait(&status) > 0);
+                      		if (status < 0) {
                         		perror("Error ejecucion hijo\n");
 								return (-1);
                       		}
@@ -191,15 +201,14 @@ int main(int argc, char* argv[])
 		//If we receive more than 1 parameter we need to create pipes
 		else {
 			int n_commands = command_counter;
-            int fd[2];		//
-            int pid, status2;
-            int filehandle = 0;
-			
+            int fd[2];		// Pipe input and output descriptors
+            int pid;
+            int descfile = 0;
 			int desc_dup;
 
 			// To make the standard input be desc_dup
 			if ((desc_dup = dup(0)) < 0) {
-				perror("Descriptor could not be duplicated\n");
+				perror("Descriptor could not be duplicated");
 				return (-1);
 			}
 			//For each parameter (command) passed we create a pipe to execute it
@@ -207,64 +216,65 @@ int main(int argc, char* argv[])
             // Unless it is the last command that we do not create it
             	if (i != n_commands - 1) {
                     if (pipe(fd) < 0) {
-                        perror("Pipe creation error\n");
+                        perror("Pipe creation error");
                         return (-1);
                     }
                 }
 
-				/* se crea el proceso siguiente en la cadena */
+				// Create a process for each loop iteration, that is to say, for each command
                 switch (pid = fork()) {
                     case -1:
                       	perror("Process creation error");
 						// Close both read and write descriptors created by the pipe
-						if((close(fd[0])) < 0) {
-							perror("Error al cerrar descriptor");
+						if ((close(fd[0])) < 0) {
+							perror("Error while closing input descriptor");
 							return (-1);
 							
 						}
-						if((close(fd[1])) < 0) {
-							perror("Error al cerrar descriptor");
+						if ((close(fd[1])) < 0) {
+							perror("Error while closing output descriptor");
 							return (-1);
 						}
                     
 					// Child process
 					case 0:
-						// Cambiar orden de abrir los archivos empezar por 0
+						// Check if the error redirection file exists and open it
                       	if (strcmp(filev[2], "0") != 0) {
 							if((close(2)) <0) {
-								perror("Error al cerrar descriptor");
+								perror("Error while closing error file descriptor");
 								return (-1);
 							}
 
-							if ((filehandle = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
-								perror("Error al abrir fichero\n");
+							if ((descfile = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+								perror("Error while opening new error file");
 								return (-1);
 							}
                       	}
-						//If it is the first iteration, create the input file
+						//If it is the first iteration, and we have redirection to a new input file, we close the defaul and open this one
                       	if (i == 0 && strcmp(filev[0], "0") != 0) {
-							// Close the standard input
 							if((close(0)) <0){
-								perror("Error al cerrar descriptor");
+								perror("Error while closing default input descriptor");
 								return (-1);
 							}
-							if ((filehandle = open(filev[0], O_RDWR, 0644)) < 0) {
-								perror("Error al abrir fichero\n");
+							if ((descfile = open(filev[0], O_RDWR, 0644)) < 0) {
+								perror("Error while opening new input file");
 								return (-1);
 							}
                       	}
-						// Otherwise ... 
+						// Otherwise we set the new input file as a duplicate from the previous
 						else {
 							if((close(0)) <0) {
-								perror("Error al cerrar descriptor");
+								perror("Error while closing the default input");
 								return (-1);
 							}
+							// Duplicate de first duplicated descriptor
 							if (dup(desc_dup) < 0) {
-								perror("Error al duplicar descriptor\n");
+								perror("Error while duplicating the new input");
 								return (-1);
 							}
+							// Close that first duplicated descriptor to only get the input through this one
 							if((close(desc_dup)) <0){
-								perror("Error al cerrar descriptor");
+								perror("Error while closing the old new input");
 								return (-1);
 							}
                       	}
@@ -272,82 +282,93 @@ int main(int argc, char* argv[])
 						// Check if it is the last process and close the default output
                       	if (i != n_commands - 1) {
 							if((close(1)) <0) {
-								perror("Error al cerrar descriptor");
+								perror("Error while closing the output file");
 								return (-1);
 							}
-
+							// Duplicate the pipe output, so that the next one can get it from it
 							if (dup(fd[1]) < 0) {
-								perror("Error al duplicar descriptor\n");
+								perror("Error while duplicating the pipe's output");
 								return (-1);
 							}
-							if((close(fd[0])) <0) {
-								perror("Error al cerrar descriptor");
-								return (-1);
-								}
-							if((close(fd[1])) <0) {
-								perror("Error al cerrar descriptor");
+							// Close the current pipe's input
+							if ((close(fd[0])) < 0) {
+								perror("Error while closing the pipe's input");
 								return (-1);
 							}
-                      	} 
+							// Close the current pipe's output
+							if ((close(fd[1])) < 0) {
+								perror("Error while closing the pipe's output");
+								return (-1);
+							}
+                      	}
+						// If its not the last one, check the input redirection file, close the old one and se it as the current one
 					  	else {
                         	if (strcmp(filev[1], "0") != 0) {
 								if((close(1)) <0) {
-									perror("Error al cerrar descriptor");
+									perror("Error while closing input file");
 									return (-1);
 								}
 
-								if ((filehandle = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
-									perror("Error al abrir fichero\n");
+								if ((descfile = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
+									perror("Error while opening new input file");
 									return (-1);
 								}
                         	}
                     	}
-
+						
+						// Check if it is executing in background and print on the screen the child's pid with the format specified
                       	getCompleteCommand(argvv, i);
-							if (in_background) {
+							if (in_background != 0) {			
 	                      		printf("[%d]\n", getpid());
 	                    	}
-
+							// Execute the current command
 							if (execvp(argv_execvp[0], argv_execvp) < 0) {
-								perror("Error al ejecutar\n");
+								perror("Error while executing command");
 								return (-1);
 							}
-                     	
 						break;
-					// For the parent process (as it returns the child's PID )
+					
+					// For the parent process (as it returns the child's pid)
                     default:
                       	// El padre le da el nuevo valor a in para que pueda utilizarlo el hijo a no ser que sea el ultimo proceso
-						if((close(desc_dup)) <0){
-							perror("Error al cerrar descriptor");
+						// Close the current input descriptor
+						if ((close(desc_dup)) < 0) {
+							perror("Error while closing the input descriptor");
 							return (-1);
-						}                      
+						}
+						// If it is the last command
 						if (i != n_commands - 1) {
+							// Set the value of desc_dup as the new input
 							if ((desc_dup = dup(fd[0])) < 0) {
-								perror("Error al duplicar descriptor\n");
+								perror("Error while duplicating input descriptor");
 								return (-1);
 							}
+							// A VER SI BORRANDO ESTO FUNCIONA PORQUE NO LO ENTIENDO
+							// Duplicate the old one 
 							if (dup(fd[0]) < 0) {
 								perror("Error al duplicar descriptor\n");
 								return (-1);
 							}
-							if((close(fd[1])) <0) {
-								perror("Error al cerrar descriptor");
+							// Close the current output descriptor
+							if ((close(fd[1])) < 0) {
+								perror("Error while closing output descriptor");
 								return (-1);
 							}
                       	}
 				}			
 			}
-			if (filehandle!=0) {
-				if((close(filehandle)) <0) {
-					perror("Error al cerrar descriptor");
+			// Close the redirection file
+			if (descfile != 0) {
+				if((close(descfile)) < 0) {
+					perror("Error while closing redirection file descriptor");
 					return (-1);
 				}
 			}
             
-			// Al terminar el bucle, el primer proceso espera al último, que irá despertando a todos
-            if (!in_background) {
-                while (wait(&status2) > 0);
-                    if (stat < 0) {
+			// Wait for each corresponding children to finish
+            if (in_background == 0) {
+                while (wait(&status) > 0);
+                    if (status < 0) {
                       	perror("Error ejecucion hijo\n");
 						return (-1);
                     }
