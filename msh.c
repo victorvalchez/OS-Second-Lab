@@ -17,14 +17,13 @@
 #define MAX_COMMANDS 8
 
 
-// files in case of redirection.
+// Files in case of redirection.
 char filev[3][64];
 
-//to store the execvp second parameter.
+// To store the execvp second parameter.
 char *argv_execvp[8];
 
-void siginthandler(int param)
-{
+void siginthandler(int param) {
 	printf("****  Exiting MSH **** \n");
 	//signal(SIGINT, siginthandler);
 	exit(0);
@@ -103,84 +102,85 @@ int main(int argc, char* argv[])
 
 
 		/************************ STUDENTS CODE ********************************/
-	   if (command_counter > 0) {
+	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
 			}
 			else {
+                // print_command(argvv, filev, in_background);
 				for (int i = 0; i < command_counter; i++) {
-                  getCompleteCommand(argvv, i);
+                      getCompleteCommand(argvv, i);
                 }
 			}
 		}
 
-		//To excute a single command through the child, not necessary to create pipes
+		// To excute a single command through the child, it is not necessary to create pipes.
 		if (command_counter == 1) {
             int pid = fork();
 			switch(pid){
 				case -1:
-                	perror("Process creation error");
+                	perror("Process creation error.");
                 	return (-1);
-				
-				//In case the fork was ok, we receive 0 from the child's process
+	
+				//In case the fork was ok (no errors), we receive 0 from the child's process.
 				case 0:
-					int check_file=0;
-        			int stat;  //CAMBIAR NOMBRE DE ESTO; CUANDO SEPA QUE SIGNIFICA
+					int check_file = 0;
+        			int stat;  //CAMBIAR NOMBRE DE ESTO; CUANDO SEPA QUE SIGNIFICA JAJAJAJAJ
 			
-					//To redirect the standard input
+					// To redirect the standard input.
 					if (strcmp(filev[0], "0") != 0) {
 						if((close(0)) <0){
-							perror("Closing STD_IN error");
+							perror("Closing STD_IN error.");
 						}
 
 						if ((check_file = open(filev[0], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
-							perror("Error while opening new input file\n");
+							perror("Error while opening new input file.\n");
 						}
 					}
 
-					//To redirect the standard ouput
+					// To redirect the standard ouput.
 					if (strcmp(filev[1], "0") != 0) {
 						if((close(1)) <0){
-							perror("Closing STD_OUT error");
+							perror("Closing STD_OUT error.");
 						}
 
 						if ((check_file = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
-							perror("Error while opening new ouput file\n");
+							perror("Error while opening new ouput file.\n");
 						}
 					}
 
-					//To redirect the standard error
+					// To redirect the standard error.
 					if (strcmp(filev[2], "0") != 0) {
 						if((close(2)) <0){
-							perror("Closing STD_ERR error");
+							perror("Closing STD_ERR error.");
 						}
 
 						if ((check_file = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
-							perror("Error while opening new error file\n");
+							perror("Error while opening new error file.\n");
 						}
 					}
                 
-					//Make the child process exceute the command
+					// Make the child process exceute the command.
 					if (execvp(argv_execvp[0], argv_execvp) < 0) {
-						perror("Error al ejecutar\n");
+						perror("Error al ejecutar.\n");
 					}
              
-					default: //Parent process
+					default: // Parent process.
 						if(check_file!=0){
 							if((close(check_file)) <0){
-								perror("Error al cerrar descriptor");
+								perror("Error al cerrar descriptor.");
 							}
 						}
                     	if (!in_background) {
                       		while (wait(&stat) > 0);
                       		if (stat < 0) {
-                        		perror("Error ejecucion hijo\n");
+                        		perror("Error ejecucion hijo.\n");
                       		}
                    		 }	
             }
 		}
 
-		//If we receive more than 1 parameter we need to create pipes
+		// If we receive more than 1 parameter we need to create pipes.
 		else {
 			int n_commands= command_counter;
             int fd[2];

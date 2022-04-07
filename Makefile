@@ -1,4 +1,4 @@
-CC=gcc
+zCC=gcc
 FLAGS=-Wno-implicit-function-declaration
 CFLAGS=-I.
 OBJ = msh.o 
