@@ -6,7 +6,7 @@ if (strcmp(argv_execvp[0], "mycalc") == 0) {
         // ADD --> Addition operation.
         if (strcmp(argv_execvp[2], "add") == 0) {
             
-            // We separate the two operands into 2 variables by taking them from positions 1 and 3 from argv_execvp.
+            // We separate the two operands into 2 integer variables (using atoi) by taking them from positions 1 and 3 from argv_execvp.
             int operand1 = atoi(argv_execvp[1]);
             int operand2 = atoi(argv_execvp[3]);
 

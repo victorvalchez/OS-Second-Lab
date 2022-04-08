@@ -38,7 +38,7 @@ char *argv_execvp[8];
 
 void siginthandler(int param)
 {
-	printf("****  Exiting MSH **** \n");
+	printf("**** Exiting MSH **** \n");
 	//signal(SIGINT, siginthandler);
 	exit(0);
 }
@@ -85,6 +85,9 @@ int main(int argc, char* argv[])
 
 	/*********************************/
 
+    // Variable to store the error message while writing.
+    char writing_error[100] = "[ERROR] Error while writing\n";
+    
 	char ***argvv = NULL;
 	int num_commands;
 
@@ -124,7 +127,7 @@ int main(int argc, char* argv[])
 			}
 			
 			for (int i = 0; i < command_counter; i++) {
-            getCompleteCommand(argvv, i);
+                getCompleteCommand(argvv, i);
         	} 
 			/* else {
                 // print_command(argvv, filev, in_background);
@@ -133,13 +136,17 @@ int main(int argc, char* argv[])
 
         // Internal command: mycalc.
         if (strcmp(argv_execvp[0], "mycalc") == 0) {
-            // We ensure that we receive three arguments (<operand_1>, <add/mod>, <operand_2>) to perform the operation.
+            
+			// Error message for the structure of mycalc
+			char error_structure[100] = "[ERROR] The structure of the command is mycalc <operand_1> <add/mod> <operand_2>\n";
+            
+			// We ensure that we receive three arguments (<operand_1>, <add/mod>, <operand_2>) to perform the operation.
             if ((argv_execvp[1] != NULL) && (argv_execvp[2] != NULL) && (argv_execvp[3] != NULL)) {
-                
+	
                 // ADD --> Addition operation.
                 if (strcmp(argv_execvp[2], "add") == 0) {
                     
-                    // We separate the two operands into 2 variables by taking them from positions 1 and 3 from argv_execvp.
+                    // We separate the two operands into 2 integer variables (using atoi) by taking them from positions 1 and 3 from argv_execvp.
                     int operand1 = atoi(argv_execvp[1]);
                     int operand2 = atoi(argv_execvp[3]);
         
@@ -151,18 +158,18 @@ int main(int argc, char* argv[])
                     sprintf(buffer, "%d", Acc);
                     const char *p = buffer;
                     
-                    // Environment variable Add which stores the addition of the sums done.
+                    // Environment variable Acc which stores the addition of the sums done.
                     if (setenv("Acc", p, 1) < 0) {
                         perror("[ERROR] Error in enviroment variable\n");
                         return(-1);
                     }
             
-                    char str[100];
-                    snprintf(str, 100, "[OK] %d + %d = %d; Acc %s\n", operand1, operand2, operand1 + operand2, getenv("Acc"));
+                    char ok_op[120];
+                    snprintf(ok_op, 120, "[OK] %d + %d = %d; Acc %s\n", operand1, operand2, operand1 + operand2, getenv("Acc"));
         
                     // We check if there is any error while writing.
-                    if((write(2, str, strlen(str))) < 0){
-                        perror("[ERROR] Error while writing\n");
+                    if((write(2, ok_op, strlen(ok_op))) < 0){
+                        perror(writing_error);
                         return(-1);
                     }
                                  
@@ -170,15 +177,17 @@ int main(int argc, char* argv[])
         
                 // MOD --> Modulus operation.
                 else if (strcmp(argv_execvp[2], "mod") == 0) {
+
+                    // We separate the two operands into 2 integer variables (using atoi) by taking them from positions 1 and 3 from argv_execvp.
                     int operand1 = atoi(argv_execvp[1]);
                     int operand2 = atoi(argv_execvp[3]);
-                    char str[100];
-                
-                    snprintf(str, 100, "[OK] %d %% %d = %d; Quotient %d\n", operand1, operand2, operand1 % operand2, abs(floor(operand1 / operand2)));
+                    
+                    char ok_op[120];
+                    snprintf(ok_op, 120, "[OK] %d %% %d = %d; Quotient %d\n", operand1, operand2, operand1 % operand2, abs(floor(operand1 / operand2)));
         
                     // We check if there is any error while writing the message on screen.
-                    if((write(2, str, strlen(str)))<0){
-                        perror("[ERROR] Error while writing\n");
+                    if((write(2, ok_op, strlen(ok_op)))<0){
+                        perror(writing_error);
                         return(-1);
                     }
             
@@ -187,8 +196,8 @@ int main(int argc, char* argv[])
                 // If add nor mod are selected as operations, the format of the call is not correct and an error is shown.
                 else {
                     // We check if there is any error while writing the ERROR message on screen.
-                    if((write(1, "[ERROR] The structure of the command is mycalc <operand_1> <add/mod> <operand_2>\n", strlen("[ERROR] The structure of the command is mycalc <operand_1> <add/mod> <operand_2>\n"))) < 0) {
-                        perror("Error while writing.");
+                    if((write(1, error_structure, strlen(error_structure))) < 0) {
+                        perror(writing_error);
                         return(-1);
                     }    
                 }
@@ -197,15 +206,19 @@ int main(int argc, char* argv[])
             // If some of the arguments is null, the format of the call is not correct and an error is shown.
             else {
                 // We check if there is any error while writing the ERROR message on screen.
-                if((write(1, "[ERROR] The structure of the command is mycalc <operand_1> <add/mod> <operand_2>\n", strlen("[ERROR] The structure of the command is mycalc <operand_1> <add/mod> <operand_2>\n"))) < 0) {
-                    perror("Error while writing.");
+                if((write(1, error_structure, strlen(error_structure))) < 0) {
+                    perror(writing_error);
                     return(-1);
                 }
             }
         }
 
+
         // Internal command: mycp.
         else if (strcmp(argv_execvp[0], "mycp") == 0) {
+
+            char error_structure[100] = "[ERROR] The structure of the command is mycp <original_file> <copied_file>\n";
+            
             // We ensure that we receive two arguments (<original_file> and <copied_file>) to perform the operation.
             if ((argv_execvp[1] != NULL) && (argv_execvp[2] != NULL)) {
         
@@ -213,12 +226,16 @@ int main(int argc, char* argv[])
                 // Each of them will store both the descriptor of the first and second file respectively given as arguments.
                 int fd_in = open(argv_execvp[1], O_RDONLY, PERM);
                 int fd_out = open(argv_execvp[2], O_TRUNC | O_WRONLY | O_CREAT, PERM);
+
+                // Variables to store different errors.
+                char open_error[100] = "[ERROR] Error opening the original file\n";
+
                 
                 if (fd_in >= 0) {
         
                     if (fd_out < 0) {
                         if((write(1, "[ERROR] Error opening the copied file\n", strlen("[ERROR] Error opening the copied file\n"))) < 0){
-                            perror("[ERROR] Error while writing\n");
+                            perror(writing_error);
                             return(-1);
                         }
                     }
@@ -241,11 +258,11 @@ int main(int argc, char* argv[])
                                     perror("[ERROR] Error closing the copied file\n");
                                     return(-1);
                                 }
-                            perror("[ERROR] Error while writing\n");
+                            perror(writing_error);
                             return(-1);
                             }
                             // We update the number of bytes left to be written into destination.
-                            nread = nread - nwrite;
+                            nread -= nwrite;
                         } while (nread > 0);
                     }
         
@@ -257,7 +274,7 @@ int main(int argc, char* argv[])
                         }
                       }
                     
-                     // Cuando acabamos de leer el fichero lo cerramos, tambien lo cerramos ante un error cuando lo tenemos abierto
+                    // After copying everything we close the corresponding files and check for errors
                     if (close(fd_in) < 0) {
                         perror("[ERROR] Error closing the original file\n");
                     }
@@ -265,29 +282,34 @@ int main(int argc, char* argv[])
                     if (close(fd_out) < 0) {
                         perror("[ERROR] Error closing the copied file\n");
                     }
+
+                    /*
+                    char ok_copy[100];
+                    snprintf(ok_copy, 100, "[OK] Copy has been successful between %s and %s\n", argv_execvp[1], argv_execvp[2]);
+                    write(1, ok_copy, strlen(ok_copy));
+                    */
+
+        			char ok_msg[120];
+                    snprintf(ok_msg, 120, "[OK] Copy has been successful between %s and %s\n", argv_execvp[1], argv_execvp[2]);
+                    write(1, ok_msg, 120);
                     
-                    char str[100];
-                    snprintf(str, 100, "[OK] Copy has been successful between %s and %s\n", argv_execvp[1], argv_execvp[2]);
-                    write(1, str, strlen(str));
                 } 
                 // If the original file has not been successfully opened, an error is raised.
                 else {
-                    if((write(1, "[ERROR] Error opening the original file\n", strlen("[ERROR] Error opening the original file\n"))) < 0){
-                        perror("[ERROR] Error while writing\n");
+                    if((write(1, open_error, strlen(open_error))) < 0){
+                        perror(writing_error);
                         return(-1);
                     }
                 }
             }
             // If argument 1 or 2 of argv_execvp is Null, it means that the structure of the command introduced is not correct and an error is raised.
             else {
-                if((write(1, "[ERROR] The structure of the command is mycp <original_file><copied_file>\n", strlen("[ERROR] The structure of the command is mycp <original_file><copied_file>\n"))) <0){
-                    perror("[ERROR] Error while writing\n");
+                if((write(1, error_structure, strlen(error_structure))) <0){
+                    perror(writing_error);
                     return -1;
                 }
             }
         }
-
-
 
 		// PART 1 & 2 --> EXECUTION OF SIMPLE COMMANDS AND EXECUTION IN BACKGROUND.
 		// To excute a single command through the child, not necessary to create pipes.
@@ -373,6 +395,10 @@ int main(int argc, char* argv[])
 								return (-1);
                       		}
                    	}	
+					else {
+						pid = getpid();
+	                    printf("[%d]\n", pid);
+					}
             }
 		}
 		// PART 3 --> EXECUTION OF MORE THAN 1 COMMAND.
@@ -457,7 +483,7 @@ int main(int argc, char* argv[])
 							}
                       	}
 
-						// Check if it is the last process and close the default output.
+						// Check if it is not the last process and close the default output.
                       	if (i != n_commands - 1) {
 							if((close(1)) <0) {
 								perror("[ERROR] Error while closing the output file");
@@ -479,16 +505,16 @@ int main(int argc, char* argv[])
 								return (-1);
 							}
                       	}
-						// If its not the last one, check the input redirection file, close the old one and se it as the current one.
+						// If it is the last one, check the output redirection file, close the old one and se it as the current one.
 					  	else {
                         	if (strcmp(filev[1], "0") != 0) {
 								if((close(1)) <0) {
-									perror("[ERROR] Error while closing input file");
+									perror("[ERROR] Error while closing output file");
 									return (-1);
 								}
 
 								if ((descfile = open(filev[1], O_TRUNC | O_WRONLY | O_CREAT, PERM)) < 0) {
-									perror("[ERROR] Error while opening new input file.");
+									perror("[ERROR] Error while opening new output file.");
 									return (-1);
 								}
                         	}
@@ -496,19 +522,19 @@ int main(int argc, char* argv[])
 						
 						// Check if it is executing in background and print on the screen the child's pid with the format specified.
                       	getCompleteCommand(argvv, i);
-							if (in_background != 0) {			
-	                      		printf("[%d]\n", getpid());
-	                    	}
-							// Execute the current command.
-							if (execvp(argv_execvp[0], argv_execvp) < 0) {
-								perror("[ERROR] Error while executing command.");
-								return (-1);
+						if (in_background == 1) {
+							pid = getpid();
+	                      	printf("[%d]\n", pid);
+	                    }
+						// Execute the current command.
+						if (execvp(argv_execvp[0], argv_execvp) < 0) {
+							perror("[ERROR] Error while executing command.");
+							return (-1);
 							}
 						break;
 					
 					// For the parent process (as it returns the child's pid).
                     default:
-                      	// El padre le da el nuevo valor a in para que pueda utilizarlo el hijo a no ser que sea el ultimo proceso
 						// Close the current input descriptor
 						if ((close(desc_dup)) < 0) {
 							perror("[ERROR] Error while closing the input descriptor.");
@@ -545,11 +571,12 @@ int main(int argc, char* argv[])
             
 			// Wait for each corresponding children to finish
             if (in_background == 0) {
-                while (wait(&status) > 0);
+                while (wait(&status) > 0) {
                     if (status < 0) {
                       	perror("[ERROR] Error in child's execution.\n");
 						return (-1);
                     }
+                }
             }
 		}
     }

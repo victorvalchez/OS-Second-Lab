@@ -7,6 +7,9 @@ if (strcmp(argv_execvp[0], "mycp") == 0) {
         // Each of them will store both the descriptor of the first and second file respectively given as arguments.
         int fd_in = open(argv_execvp[1], O_RDONLY, PERM);
         int fd_out = open(argv_execvp[2], O_TRUNC | O_WRONLY | O_CREAT, PERM);
+
+        char open_error[100] =
+        char writing_error[100] = 
         
         if (fd_in >= 0) {
 
@@ -66,9 +69,9 @@ if (strcmp(argv_execvp[0], "mycp") == 0) {
 			
 			/*
 			ESTO FUNCIONA BIEN; YA LO HE PROBADO
-			char str[80];
-            snprintf(str, 80, "[OK] Copy has been successful between %s and %s\n", argv_execvp[1], argv_execvp[2]);
-            write(1, str, 80);*/
+			char ok_msg[80];
+            snprintf(ok_msg, 80, "[OK] Copy has been successful between %s and %s\n", argv_execvp[1], argv_execvp[2]);
+            write(1, ok_msg, 80);*/
         } 
         // If the original file has not been successfully opened, an error is raised.
         else {
