@@ -39,7 +39,7 @@ if (strcmp(argv_execvp[0], "mycp") == 0) {
                     return(-1);
                     }
                     // We update the number of bytes left to be written into destination.
-                    nread = nread - nwrite;
+                    nread -= nwrite;
                 } while (nread > 0);
             }
 
@@ -51,7 +51,7 @@ if (strcmp(argv_execvp[0], "mycp") == 0) {
                 }
               }
             
-             // Cuando acabamos de leer el fichero lo cerramos, tambien lo cerramos ante un error cuando lo tenemos abierto
+            // After copying everything we close the corresponding files and check for errors
             if (close(fd_in) < 0) {
                 perror("[ERROR] Error closing the original file\n");
             }
@@ -63,6 +63,12 @@ if (strcmp(argv_execvp[0], "mycp") == 0) {
             char str[100];
             snprintf(str, 100, "[OK] Copy has been successful between %s and %s\n", argv_execvp[1], argv_execvp[2]);
             write(1, str, strlen(str));
+			
+			/*
+			ESTO FUNCIONA BIEN; YA LO HE PROBADO
+			char str[80];
+            snprintf(str, 80, "[OK] Copy has been successful between %s and %s\n", argv_execvp[1], argv_execvp[2]);
+            write(1, str, 80);*/
         } 
         // If the original file has not been successfully opened, an error is raised.
         else {
